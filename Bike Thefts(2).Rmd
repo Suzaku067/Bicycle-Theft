@@ -1,0 +1,205 @@
+---
+title: "Bike Theft Prevention in Toronto"
+subtitle : "Based on bicycle type, bicycle cost and premise type" 
+author: "Haoming Hu, Siyuan Chen"
+date: "2/27/2021"
+output:
+  pdf_document: default
+  html_document: default
+fontsize: 12pt
+spacing: single
+---
+## Introduction
+
+  Cycling is a safe and socially distant way of transit and exercise in modern life, as you can see bike shops are everywhere across the city of Toronto. However, bikes, as a commodity, have always been an attempting item for thieves due to their size and people's negligence. According to the Toronto Police Data, there are a total of 21584 cases of bicycle theft reports from 2014-2019, and only 252 of them are recovered. Some cyclists are worried about this as the risk always exists when bikes were locked up in the public area. In this report, we will try to analyze the bicycle theft occurrence chart from 2014-2019 provided by Toronto Police Service Data mainly in the aspect of regions, premise type, bike type, and bike cost to conclude how to prevent bicycle thefts. 
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message = FALSE, echo=FALSE, include=FALSE}
+library(ggplot2)
+library(tidyverse) 
+bicyclethefts<-read_csv("bicycle-thefts-2014-2019.csv")
+metabicyle <- read_csv("Bicycle_Thefts_Metadata.csv")
+```
+
+
+```{r, message = FALSE, echo=FALSE, include=FALSE}
+# The data set we'r gonna use
+bicycletheftsrefined <- bicyclethefts %>% select(Premise_Type, 
+                                                 Bike_Type, Cost_of_Bike,
+                                                 Neighbourhood)
+bicycletheftsrefined <- bicycletheftsrefined %>% mutate(
+  Neighbourhood = str_remove(Neighbourhood, "\\s\\(\\d+\\)$"))
+
+bicycletheftsrefined
+# View the prepared data set
+view(bicycletheftsrefined)
+
+
+```
+\newpage
+
+```{r, message = FALSE, echo=FALSE, include=FALSE}
+topfiveneibourdata <- bicycletheftsrefined %>% filter(Neighbourhood == 'Waterfront Communities-The Island'
+                                                      | Neighbourhood == 'Bay Street Corridor'
+                                                      | Neighbourhood == 'Church-Yonge Corridor'
+                                                      | Neighbourhood == 'Niagara'
+                                                      | Neighbourhood == 'Annex')
+topfiveneibourdata %>% 
+  group_by(Neighbourhood, Premise_Type) %>% count()
+```
+
+```{r, echo=FALSE}
+topfiveneibourdata %>%
+  ggplot(aes(x = Neighbourhood)) +
+  geom_bar() +
+  theme_minimal() + 
+  labs(title = "5 Regions with The Most Stolen Bicycle Cases in Toronto",
+  subtitle = "From 2014 to 2019",
+  x = "Neighbourhoods",
+  y = "Number of bikes stolen")
+```
+
+
+For the first part of our report, we have filtered 5 regions with the most stolen bicycle cases in Toronto. They are Waterfront Communities-The Island, Bay Street Corridor, Church-Yonge Corridor, Niagara, and Annex. These 5 regions contain 7258 cases (about 1/3) out of the total sample size with 21584 observations. We will use the cases in these regions to do further researches on-premise types and bike types.
+
+\newpage
+
+```{r, message = FALSE, echo=FALSE, include=FALSE}
+# Locate the top 5 neighbourhoods where most of the bikes are stolen
+theftsinneighbourhood <- 
+  bicycletheftsrefined %>% group_by(Neighbourhood) %>% count(numberofthefts = n()) 
+theftsinneighbourhood[order(-theftsinneighbourhood$numberofthefts),]
+```
+```{r, message = FALSE, echo=FALSE, include=FALSE}
+# Data that is only about the top five neighbourhoods
+topfiveneibourdata <- bicycletheftsrefined %>% filter(Neighbourhood == 'Waterfront Communities-The Island'
+                                                      | Neighbourhood == 'Bay Street Corridor'
+                                                      | Neighbourhood == 'Church-Yonge Corridor'
+                                                      | Neighbourhood == 'Niagara'
+                                                      | Neighbourhood == 'Annex')
+topfiveneibourdata %>% group_by(Neighbourhood, Premise_Type) %>% count()
+
+```
+
+```{r, echo=FALSE}
+topfiveneibourdata %>% ggplot(aes(x = Neighbourhood, fill = Premise_Type)) +
+  geom_bar(position = 'dodge') +
+  theme_minimal() +
+  labs(title = "In which place bikes are stolen in the top five Neighbourhoods",
+  subtitle = "Bicycle stolen data from 2014 to 2019 in different places",
+  x = "Neighbourhoods",
+  y = "Number of bikes stolen",
+  fill = "The scene of the thefts") +
+  theme(axis.text = element_text(size = 6),
+        legend.title = element_text(size = 8)) +
+  scale_fill_brewer(palette = 'Set2')
+```
+
+In this part, we want to have a deeper understanding of in which specific places these bicycles are stolen. 
+
+First, it is easy to see a trend that Outside and Apartment are two common places where most of the bikes are stolen in the mentioned neighbourhoods. However, in Annex, bikes that are parked near people's houses are also likely to be stolen. In terms of the Bay Street Corridor, one can notice the number of stolen bikes parked outside outdistance than those parked elsewhere. Also, a large number of people in this place lost their bikes when they leave their bikes alone and have meals inside restaurants. It is noteworthy that unlike other neighbourhoods, more bikes are stolen in the apartment in Niagara than in any other place.
+
+Therefore, bicycle theft situations vary in different neighbourhoods, and we have to advise people differently about how to protect their bikes according to which district they live in.  
+
+Here, we can offer suggestions about which places residents should park their bikes. For instance, people should pay much more attention when they park their bikes outside, especially those who live on Church-Yonge Corridor. However, to offer suggestions related to bicycle purchasing, we need to figure out which bike types are more likely to be stolen in the five neighbourhoods we are interested in. Thus, we chart stolen bicycle types in different neighbourhoods.
+
+\newpage
+
+```{r, echo=FALSE}
+topfiveneibourdata %>% 
+  ggplot(aes(x = Neighbourhood, fill = Bike_Type)) +
+  geom_bar(position = 'dodge') +
+  theme_minimal() +
+  labs(title = "Recorded stolen bike types in the top five Neighbourhoods",
+  subtitle = "Bicycle stolen data from 2014 to 2019 in different places",
+  x = "Neighbourhoods",
+  y = "Number of bikes stolen",
+  fill = "Bike Type") +
+  theme(axis.text = element_text(size = 6),
+        legend.title = element_text(size = 8)) + 
+  scale_fill_discrete(labels = c("Bmx", "Electric", "Folding", "Mountain", "Other", "Racer", "Recumbant", "Regular", "Scooter", "Tandem", "Touring", "Tricycle", "Unicycle", "Type Unknown")) 
+  
+ 
+```
+
+In this part, we want to have a glimpse of stolen bike types in 5 previously chosen neighborhoods.
+
+Firstly, it's interesting to notice that regular bikes and mountain bikes have the most two reported stolen cases in all five regions, followed by racer and other bikes. It's reasonable because regular and mountain bikes are commonly seen among cyclists.
+
+Secondly, we can tell from this graph that the distribution of stolen bike types in 5 neighborhoods is very similar to each other. However, Niagara and the island, which consists of some famous scenic sites, touring bikes are more likely to getting stolen by thefts than electric bikes. It is the opposite of the other 3 neighborhoods.
+
+In conclusion, it seems that stolen cases are only associated with the amount of a single bike type, we can't tell if thieves have some kind of preference in bicycle types for all reported cases in 5 neighborhoods. So we are going to evaluate the proportion of stolen bike type in different scenes (premise type) for all cases given by the data(no restriction on neighbourhoods). 
+
+\newpage
+
+```{r, message = FALSE, echo=FALSE, include=FALSE}
+premisebiketype <- bicycletheftsrefined %>% group_by(Premise_Type, Bike_Type) %>% count() 
+premisebiketype <- premisebiketype %>% ungroup() %>% group_by(Premise_Type)%>% mutate(percent = round(n/sum(n), 2))%>%
+  ungroup()
+premisebiketype
+```
+
+```{r, echo=FALSE}
+ggplot(premisebiketype, aes(x = Premise_Type, y = percent, fill = Bike_Type)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE), 
+           width = 0.6) +
+  geom_text(aes(label = scales::percent_format(accuracy = 1)(percent)), 
+            colour = "white", position = position_fill(vjust = 0.5, reverse = TRUE), check_overlap = TRUE, size = 4) +
+  theme_minimal() + 
+  scale_y_continuous(expand = expansion(0, 0)) + 
+  scale_x_discrete(limits = rev(unique(premisebiketype$Premise_Type))) + 
+  scale_fill_discrete(guide = guide_legend(title = NULL), labels = c("Bmx", "Electric", "Folding", "Mountain", "Other", "Racer", "Recumbant", "Regular", "Scooter", "Tandem", "Touring", "Tricycle", "Unicycle", "Type Unknown")) + 
+  labs(title = "Overall percentage of different types of stolen bikes in different scene of thefts",
+  x = "Scenes of theft",
+  y = "Percentage of bike stolen") +
+  coord_flip() +
+  theme(legend.position = "top") 
+```
+
+Apartment, Commercial, House, Outside and Other are the five most common scenes of theft. We want to figure out how many different bikes are stolen in each of the theft scenes.
+
+From the plot we drew there, we notice that MT(Mountain Bike), OT(Other), RC(Racer) and RG(Regular) are four bike types that are most stolen by thefts in all different scenes. It is interesting to see that the number of stolen mountain and regular bikes takes more than 50 percent of the total number of stolen bikes in each of the five scenes. 
+
+There might be many reasons why these four bike types are most likely to be stolen. One of the reasons might be because of the bike prices. Therefore, we create a chart showing each bike type's price to investigate why these bikes are prone to be stolen.
+
+
+\newpage
+
+```{r, message = FALSE, echo=FALSE, include=FALSE}
+bikedata <- bicycletheftsrefined %>% filter(!is.na(Cost_of_Bike))
+bikedata
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+bikedata %>% 
+  mutate( type=ifelse(Bike_Type=="MT" | Bike_Type=="OT" | Bike_Type=="RC" | Bike_Type=="RG", "Highlighted","Normal")) %>%
+  ggplot(aes(x=Bike_Type, y=Cost_of_Bike, fill=type, alpha=type)) +
+  geom_boxplot() +
+  scale_fill_manual(values=c("#69b3a2", "grey")) +
+  scale_alpha_manual(values=c(1,1)) +
+  scale_x_discrete(labels = c("Bmx", "Electric", "Folding", "Mountain", "Other", "Racer", "Recumbant", "Regular", "Scooter", "Tandem", "Touring", "Tricycle", "Unicycle", "Type Unknown")) +
+  scale_y_continuous(breaks = seq(0, 8000, 1000),
+                     limits=c(0, 8000)) +
+  labs(title = "How prices differ among different bike types",
+  subtitle = "Four most stolen bike types are highlighted for further investigation",
+  x = "Bike types",
+  y = "Price") +
+  coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+The highlighted bike types are the four types mentioned above that are more likely to be stolen. We can see that though regular and mountain bicycles are more likely to be stolen, they are relatively cheap and the average price is about 500 dollars. In comparison, racer bikes have overall higher average prices than the other three types.
+
+And at this point, we have some grasp of the relationship between those stolen bikes and their prices. And we can offer some suggestions regarding bicycle purchasing and how to protect them. Firstly, purchasing too expensive mountain bikes is not wise, as mountain bikes are most prone to get stolen. Besides, if you want to buy a relatively costly bike, avoid purchasing a racer bike. Otherwise, you should consider seriously about the safety of your racer bike.
+
+\newpage
+## Conclusion
+
+Based on our research, we reached a conclusion that a lot of stolen cases in Toronto city from 2014-2019 are consist with bicycle types including regular, racer and mountain. We also notice that although the mean price of these three types are not high (from $500 to $1000), several cases still suggests that the most expensive stolen bikes of these three types are worth $8000. 
+As a result, we do not recommend cyclists who usually traveled by bike and have to park their vehicles outside to buy an expensive bike. Bikes are safe if you bring them inside your house, condo, or apartment overnight. It's always risky to park a bike in public area, properly locking up the bike and treating thieves with cautions are required to prevent from stealing. 
